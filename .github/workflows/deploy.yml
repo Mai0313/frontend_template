@@ -1,0 +1,52 @@
+name: Publish Website via GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+permissions: write-all
+
+jobs:
+  build:
+    name: Deploy Website
+    runs-on: ubuntu-latest
+    # container: catthehacker/ubuntu:act-20.04  # Uncomment it if you use it on Gitea
+
+    steps:
+      - name: Disable SSL Verify
+        run: git config --global http.sslVerify false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+
+      - name: Deploy website
+        env:
+          VITE_WEBSITE_TITLE: Mai
+          VITE_GITHUB_USERNAME: ${{ github.event.repository.owner.login }}
+          VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_PIN_CODE: ${{ secrets.VITE_PIN_CODE }}
+          VITE_RESUME_FILE: example.yaml
+          VITE_ROOT_PATH: /${{ github.event.repository.name }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "<41898282+github-actions[bot]@users.noreply.github.com>"
+          yarn install
+          yarn build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./dist"
+
+      - name: Publish to GitHub Pages
+        uses: actions/deploy-pages@v4
